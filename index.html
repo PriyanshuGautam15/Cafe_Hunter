@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cafe Hunt</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f3e9;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition-property: all;
+            transition-duration: 300ms;
+            transform: scale(1);
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .vibe-card:hover {
+            border-color: #a26848;
+            transform: scale(1.01);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .vibe-card.selected {
+            border-color: #a26848;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            row-gap: 1rem;
+        }
+        @media (min-width: 640px) {
+            .input-group {
+                flex-direction: row;
+                column-gap: 1rem;
+                row-gap: 0;
+            }
+        }
+        .btn-primary {
+            background-color: #a26848;
+            color: white;
+            font-weight: 700;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition-property: background-color;
+            transition-duration: 300ms;
+        }
+        .btn-primary:hover {
+            background-color: #8e5a3d;
+        }
+        .star-rating {
+            display: flex;
+            align-items: center;
+        }
+        .star-rating .star {
+            width: 1.25rem;
+            height: 1.25rem;
+            fill: #ffd700;
+        }
+
+        /* Carousel styles */
+        .carousel-container {
+            position: relative;
+            overflow: hidden;
+        }
+        .carousel-images {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+        }
+        .carousel-images img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .carousel-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 1rem;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .carousel-button.prev {
+            left: 0;
+            border-top-right-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+        }
+        .carousel-button.next {
+            right: 0;
+            border-top-left-radius: 0.5rem;
+            border-bottom-left-radius: 0.5rem;
+        }
+
+        /* Fullscreen Image Viewer Styles */
+        .image-viewer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .image-viewer-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+        .image-viewer-content img {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .image-viewer-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 2rem;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+        .image-viewer-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 3rem;
+            cursor: pointer;
+        }
+        .image-viewer-nav-btn.prev { left: 2rem; }
+        .image-viewer-nav-btn.next { right: 2rem; }
+    </style>
+</head>
+<body class="bg-[#f7f3e9] min-h-screen flex items-center justify-center p-4">
+
+    <div class="container bg-white rounded-2xl shadow-xl p-8 sm:p-12 space-y-8 mx-auto my-12">
+        <header class="text-center space-y-2">
+            <h1 class="text-4xl font-bold text-[#5c4a3d] drop-shadow-sm">Cafe Hunt</h1>
+            <p class="text-lg text-gray-600">Find the perfect cafe for your mood</p>
+        </header>
+
+        <!-- Main Search View -->
+        <div id="main-view">
+            <!-- Vibe Selection Section -->
+            <section class="space-y-4 text-center">
+                <h2 class="text-2xl font-semibold text-[#5c4a3d]">What's your vibe today?</h2>
+                <div id="vibe-selection" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Vibe cards will be injected here by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Search Form -->
+            <form id="search-form" class="space-y-6 hidden">
+                <div class="input-group">
+                    <input type="text" id="city-location" placeholder="Enter city (e.g., Delhi, Mumbai)" required
+                           class="flex-1 w-full p-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#a26848] focus:border-transparent transition-shadow duration-300">
+                    <button type="submit" class="w-full sm:w-auto btn-primary">
+                        Find Cafes
+                    </button>
+                </div>
+                <div id="locality-group" class="input-group hidden">
+                    <input type="text" id="locality-location" placeholder="Enter locality (optional)"
+                           class="flex-1 w-full p-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#a26848] focus:border-transparent transition-shadow duration-300">
+                    <button type="button" id="search-locality-btn" class="w-full sm:w-auto btn-primary">
+                        Search Locality
+                    </button>
+                </div>
+            </form>
+
+            <!-- Message Box -->
+            <div id="message-box" class="hidden p-4 rounded-lg text-sm text-center font-medium" role="alert"></div>
+
+            <!-- Loading Indicator -->
+            <div id="loading-indicator" class="hidden text-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#a26848] mx-auto"></div>
+                <p class="mt-2 text-gray-500">Finding cafes...</p>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-container" class="space-y-6">
+                <!-- Cafe cards will be injected here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Cafe Details View -->
+        <div id="details-view" class="hidden">
+            <button id="back-button" class="text-gray-600 hover:text-[#a26848] transition-colors duration-300 mb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" /></svg>
+                Back to Search
+            </button>
+            <div id="cafe-details" class="card p-8 space-y-4">
+                <!-- Detailed cafe info will be injected here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Image Viewer -->
+    <div id="image-viewer" class="image-viewer-overlay">
+        <span id="close-viewer-btn" class="image-viewer-close-btn">&times;</span>
+        <div class="image-viewer-content">
+            <img id="fullscreen-image" src="" alt="Full screen cafe image">
+        </div>
+        <span id="prev-image-btn" class="image-viewer-nav-btn prev">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+        </span>
+        <span id="next-image-btn" class="image-viewer-nav-btn next">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+        </span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const vibes = [
+                { id: 'calm', text: 'Calm & Relaxed', icon: '🍃', description: 'Peaceful environment for unwinding' },
+                { id: 'lively', text: 'Energetic & Social', icon: '⚡', description: 'Buzzing atmosphere, perfect for networking' },
+                { id: 'study-friendly', text: 'Creative & Focused', icon: '🎨', description: 'Inspiring spaces for productivity' },
+                { id: 'romantic', text: 'Romantic & Cozy', icon: '💖', description: 'Intimate settings for deep conversations' },
+                { id: 'rustic', text: 'Adventure & Trendy', icon: '✨', description: 'Unique experiences & cutting-edge culture' }
+            ];
+
+            const mainView = document.getElementById('main-view');
+            const detailsView = document.getElementById('details-view');
+            const backButton = document.getElementById('back-button');
+            const vibeSelection = document.getElementById('vibe-selection');
+            const searchForm = document.getElementById('search-form');
+            const cityInput = document.getElementById('city-location');
+            const localityInput = document.getElementById('locality-location');
+            const localityGroup = document.getElementById('locality-group');
+            const searchLocalityBtn = document.getElementById('search-locality-btn');
+            const resultsContainer = document.getElementById('results-container');
+            const cafeDetailsContainer = document.getElementById('cafe-details');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const messageBox = document.getElementById('message-box');
+            let selectedVibe = '';
+            let currentCity = '';
+            let currentCafes = [];
+            let currentImageUrls = [];
+            let currentImageIndex = 0;
+
+            const imageViewer = document.getElementById('image-viewer');
+            const fullscreenImage = document.getElementById('fullscreen-image');
+            const closeViewerBtn = document.getElementById('close-viewer-btn');
+            const prevImageBtn = document.getElementById('prev-image-btn');
+            const nextImageBtn = document.getElementById('next-image-btn');
+
+            // Render vibe cards
+            vibes.forEach(vibe => {
+                const card = document.createElement('div');
+                card.className = 'card vibe-card text-center flex flex-col items-center justify-center space-y-2';
+                card.dataset.vibe = vibe.id;
+                card.innerHTML = `
+                    <div class="text-4xl">${vibe.icon}</div>
+                    <h3 class="text-lg font-medium text-[#5c4a3d]">${vibe.text}</h3>
+                    <p class="text-sm text-gray-500">${vibe.description}</p>
+                `;
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.vibe-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    selectedVibe = vibe.id;
+                    searchForm.classList.remove('hidden');
+                    localityGroup.classList.add('hidden');
+                    resultsContainer.innerHTML = '';
+                    cityInput.focus();
+                });
+                vibeSelection.appendChild(card);
+            });
+
+            function showMessage(message, type = 'info') {
+                messageBox.textContent = message;
+                messageBox.className = 'p-4 rounded-lg text-sm text-center font-medium';
+                if (type === 'error') {
+                    messageBox.classList.add('bg-red-100', 'text-red-700');
+                } else {
+                    messageBox.classList.add('bg-blue-100', 'text-blue-700');
+                }
+                messageBox.classList.remove('hidden');
+            }
+
+            function hideMessage() {
+                messageBox.classList.add('hidden');
+            }
+
+            searchForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                currentCity = cityInput.value;
+                searchCafes(currentCity, '');
+            });
+
+            searchLocalityBtn.addEventListener('click', () => {
+                searchCafes(currentCity, localityInput.value);
+            });
+
+            async function searchCafes(location, locality) {
+                hideMessage();
+                resultsContainer.innerHTML = '';
+                loadingIndicator.classList.remove('hidden');
+
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/search', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ location, vibe: selectedVibe, locality })
+                    });
+
+                    const data = await response.json();
+
+                    loadingIndicator.classList.add('hidden');
+
+                    if (response.ok) {
+                        currentCafes = data.cafes;
+                        if (currentCafes.length > 0) {
+                            renderCafes(currentCafes);
+                            localityGroup.classList.remove('hidden');
+                            localityInput.focus();
+                        } else {
+                            showMessage('No cafes found. Try a different city or vibe.', 'info');
+                            localityGroup.classList.add('hidden');
+                        }
+                    } else {
+                        throw new Error(data.error || 'Something went wrong.');
+                    }
+
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    loadingIndicator.classList.add('hidden');
+                    showMessage(`Error: ${error.message}`, 'error');
+                }
+            }
+
+            function renderCafes(cafes) {
+                resultsContainer.innerHTML = '';
+                cafes.forEach(cafe => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-xl shadow-lg p-6 sm:p-8 space-y-4 transform transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:border-4 hover:border-[#a26848] flex items-start space-x-4';
+
+                    const rating = cafe.rating ? `
+                        <div class="flex items-center space-x-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current text-yellow-400" viewBox="0 0 20 20"><path d="M10 15.27L16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+                            <span class="text-sm font-semibold text-[#a26848]">${cafe.rating}</span>
+                        </div>
+                    ` : `<span class="text-sm text-gray-500">No rating</span>`;
+
+                    const overview = cafe.overview || '';
+                    const placeholderImageUrl = 'https://placehold.co/128x128/f3f4f6/a26848?text=No+Image';
+
+                    card.innerHTML = `
+                        <div class="flex-shrink-0">
+                            <img src="${cafe.image_url || placeholderImageUrl}" onerror="this.onerror=null;this.src='${placeholderImageUrl}';" class="w-24 h-24 sm:w-32 sm:h-32 rounded-lg object-cover">
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h2 class="text-2xl font-semibold text-[#5c4a3d]">${cafe.name || 'Unnamed Cafe'}</h2>
+                                    <p class="text-gray-500 mt-1">${cafe.address || 'Address not available'}</p>
+                                </div>
+                                ${rating}
+                            </div>
+                            <div class="mt-4">
+                                <button class="btn-primary text-sm px-4 py-2" data-place-id="${cafe.place_id}" data-image-url="${cafe.image_url}" data-cafe-name="${cafe.name}" data-cafe-address="${cafe.address}">
+                                    Click to explore more
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    card.querySelector('button').addEventListener('click', (e) => {
+                        const placeId = e.target.dataset.placeId;
+                        const imageUrl = e.target.dataset.imageUrl;
+                        const cafeName = e.target.dataset.cafeName;
+                        const cafeAddress = e.target.dataset.cafeAddress;
+                        showCafeDetails(placeId, imageUrl, cafeName, cafeAddress);
+                    });
+                    resultsContainer.appendChild(card);
+                });
+            }
+
+            async function showCafeDetails(placeId, imageUrl, cafeName, cafeAddress) {
+                mainView.classList.add('hidden');
+                detailsView.classList.remove('hidden');
+                cafeDetailsContainer.innerHTML = `
+                    <div class="text-center">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#a26848] mx-auto"></div>
+                        <p class="mt-2 text-gray-500">Loading details...</p>
+                    </div>
+                `;
+
+                try {
+                    const detailsResponse = await fetch('http://127.0.0.1:5000/details', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ placeId: placeId })
+                    });
+                    const detailsData = await detailsResponse.json();
+
+                    const imagesResponse = await fetch('http://127.0.0.1:5000/images', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ cafeName: cafeName, location: cafeAddress })
+                    });
+                    const imagesData = await imagesResponse.json();
+
+                    const menuResponse = await fetch('http://127.0.0.1:5000/menu', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ cafeName: cafeName, location: cafeAddress })
+                    });
+                    const menuData = await menuResponse.json();
+
+                    const allImageUrls = [imageUrl, ...imagesData.images];
+                    renderCafeDetails(detailsData.cafe, allImageUrls, menuData.menu_highlights);
+
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    cafeDetailsContainer.innerHTML = `<p class="text-red-700 text-center">Error loading details: ${error.message}</p>`;
+                }
+            }
+
+            function renderCafeDetails(cafe, imageUrls, menuHighlights) {
+                const name = cafe.name || 'Unnamed Cafe';
+                const rating = cafe.rating ? `<span class="text-lg font-semibold text-[#a26848]">${cafe.rating}</span>` : `<span class="text-lg text-gray-500">No rating</span>`;
+                const reviewCount = cafe.review_count !== 0 ? `${cafe.review_count} Reviews` : 'No reviews';
+                const address = cafe.address || 'Address not available';
+                const website = cafe.website ? `<p><a href="${cafe.website}" target="_blank" class="text-blue-600 hover:text-blue-800 transition-colors duration-300 font-medium">Website</a></p>` : '';
+                const phone = cafe.phone ? `<p class="text-gray-700">Phone: ${cafe.phone}</p>` : '';
+
+                const reviews = cafe.reviews && cafe.reviews.length > 0 ? `
+                    <h3 class="text-lg font-semibold mt-4 text-[#5c4a3d]">Reviews</h3>
+                    <div class="space-y-4">
+                        ${cafe.reviews.map(review => `
+                            <div class="border-t pt-4">
+                                <p class="text-gray-800">"${review.snippet}"</p>
+                                <p class="text-sm text-gray-500 mt-2">Rating: ${review.rating} / 5</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : '<p class="text-gray-500">No reviews available.</p>';
+                const overview = cafe.overview;
+                const placeholderImageUrl = 'https://placehold.co/600x400/f3f4f6/a26848?text=No+Image+Available';
+
+                let carouselHTML = '';
+                if (imageUrls && imageUrls.length > 0) {
+                    carouselHTML = `
+                        <div class="carousel-container rounded-lg shadow-md mt-4">
+                            <div id="carousel-images" class="carousel-images">
+                                ${imageUrls.map(url => `<img src="${url}" class="carousel-image" onerror="this.onerror=null;this.src='${placeholderImageUrl}';" alt="Image of ${name}" onclick="openImageViewer('${url}')">`).join('')}
+                            </div>
+                            <button class="carousel-button prev" id="carousel-prev-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                            </button>
+                            <button class="carousel-button next" id="carousel-next-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    carouselHTML = `<img src="${placeholderImageUrl}" class="w-full h-64 object-cover rounded-lg shadow-md mt-4" alt="No image available for ${name}">`;
+                }
+
+                const mapLink = `https://www.google.com/maps/search/?api=1&query=${name},${address}`;
+                const ratingChart = generateStarChart(cafe.rating);
+
+                const menuSection = menuHighlights && menuHighlights.length > 0 ? `
+                    <h3 class="text-xl font-bold mt-4 text-[#5c4a3d]">Menu Highlights</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                        ${menuHighlights.map(item => `
+                            <div class="flex items-center space-x-4">
+                                <img src="${item.thumbnails[0]}" class="w-16 h-16 rounded-lg object-cover" alt="Menu item image">
+                                <div>
+                                    <p class="font-medium text-gray-800">${item.title}</p>
+                                    <p class="text-sm text-gray-500">${item.price_range || ''}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : '';
+
+
+                cafeDetailsContainer.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-3xl font-bold text-[#5c4a3d]">${name}</h2>
+                        <div class="flex items-center space-x-2">
+                           ${rating}
+                           <span class="text-sm text-gray-600">(${reviewCount})</span>
+                        </div>
+                    </div>
+                    ${carouselHTML}
+                    <div class="mt-4">
+                        <p class="text-lg text-gray-600">${address}</p>
+                        ${website}
+                        ${phone}
+                    </div>
+                    ${ratingChart}
+                    <div class="pt-2">
+                       <a href="${mapLink}" target="_blank" class="btn-primary inline-block">View on Map</a>
+                    </div>
+                    ${overview ? `<p class="text-gray-700 mt-4">${overview}</p>` : ''}
+                    ${menuSection}
+                    ${reviews}
+                `;
+
+                if (imageUrls && imageUrls.length > 1) {
+                    const carouselImages = document.getElementById('carousel-images');
+                    const prevBtn = document.getElementById('carousel-prev-btn');
+                    const nextBtn = document.getElementById('carousel-next-btn');
+
+                    let currentIndex = 0;
+                    function updateCarousel() {
+                        carouselImages.style.transform = `translateX(-${currentIndex * 100}%)`;
+                    }
+
+                    prevBtn.addEventListener('click', () => {
+                        currentIndex = (currentIndex > 0) ? currentIndex - 1 : imageUrls.length - 1;
+                        updateCarousel();
+                    });
+
+                    nextBtn.addEventListener('click', () => {
+                        currentIndex = (currentIndex < imageUrls.length - 1) ? currentIndex + 1 : 0;
+                        updateCarousel();
+                    });
+                }
+            }
+
+            function generateStarChart(rating) {
+                const fullStars = Math.floor(rating);
+                const halfStar = rating % 1 >= 0.5;
+                let starsHtml = '';
+                for (let i = 0; i < 5; i++) {
+                    if (i < fullStars) {
+                        starsHtml += '<svg class="star" viewBox="0 0 20 20"><path d="M10 15.27L16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>';
+                    } else if (halfStar && i === fullStars) {
+                         starsHtml += `<svg class="star" viewBox="0 0 20 20"><path d="M10 15.27L16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z" fill="#ffd700"/><path d="M10 15.27L16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z" fill="#e5e7eb" clip-path="url(#half-star-clip)"/></svg>`;
+                    } else {
+                        starsHtml += '<svg class="star" viewBox="0 0 20 20"><path d="M10 15.27L16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z" fill="#e5e7eb"/></svg>';
+                    }
+                }
+                return `<div class="star-rating">${starsHtml}</div>`;
+            }
+
+            function openImageViewer(url) {
+                fullscreenImage.src = url;
+                imageViewer.style.display = 'flex';
+                currentImageIndex = imageUrls.indexOf(url);
+            }
+
+            function closeImageViewer() {
+                imageViewer.style.display = 'none';
+                fullscreenImage.src = '';
+            }
+
+            function navigateImage(direction) {
+                currentImageIndex = (currentImageIndex + direction + imageUrls.length) % imageUrls.length;
+                fullscreenImage.src = imageUrls[currentImageIndex];
+            }
+
+            closeViewerBtn.addEventListener('click', closeImageViewer);
+            prevImageBtn.addEventListener('click', () => navigateImage(-1));
+            nextImageBtn.addEventListener('click', () => navigateImage(1));
+            imageViewer.addEventListener('click', (e) => {
+                if (e.target === imageViewer) {
+                    closeImageViewer();
+                }
+            });
+
+            backButton.addEventListener('click', () => {
+                detailsView.classList.add('hidden');
+                mainView.classList.remove('hidden');
+            });
+        });
+    </script>
+</body>
+</html>
